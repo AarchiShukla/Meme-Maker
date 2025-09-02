@@ -22,6 +22,7 @@ import {
   Share2
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MemeElement {
   id: string;
@@ -50,6 +51,7 @@ const Index = () => {
   const [history, setHistory] = useState<HistoryState[]>([{ elements: [], backgroundImage: null }]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [aiDescription, setAiDescription] = useState("");
+  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   
   // Text controls
   const [fontSize, setFontSize] = useState(32);
@@ -171,32 +173,92 @@ const Index = () => {
     }
   };
 
-  const generateCaption = () => {
-    const captions = [
-      "When you finally understand the assignment",
-      "Me explaining to my wallet why I need this",
-      "Nobody: ... Me:",
-      "It's free real estate",
-      "This is fine",
-      "Task failed successfully",
-      "Confused screaming"
-    ];
-    const randomCaption = captions[Math.floor(Math.random() * captions.length)];
-    setAiDescription(randomCaption);
-    toast.success("Caption generated! ✨");
+  const generateCaption = async () => {
+    if (!aiDescription.trim()) {
+      toast.error("Please enter a description first!");
+      return;
+    }
+
+    setIsGeneratingCaption(true);
+    toast.loading("Cooking up a spicy caption...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-caption', {
+        body: { 
+          description: aiDescription,
+          type: 'generate'
+        }
+      });
+
+      if (error) throw error;
+
+      const caption = data.caption;
+      const newElement: MemeElement = {
+        id: Date.now().toString(),
+        type: 'text',
+        content: caption,
+        x: canvasRef.current!.offsetWidth / 2 - 100,
+        y: 50,
+        fontSize,
+        fontFamily,
+        color: textColor,
+        textAlign
+      };
+      const newElements = [...elements, newElement];
+      setElements(newElements);
+      setSelectedElement(newElement.id);
+      saveToHistory(newElements, backgroundImage);
+      
+      toast.dismiss();
+      toast.success("AI caption generated!");
+    } catch (error) {
+      console.error('Error generating caption:', error);
+      toast.dismiss();
+      toast.error("Failed to generate caption. Please try again.");
+    } finally {
+      setIsGeneratingCaption(false);
+    }
   };
 
-  const surpriseMe = () => {
-    const surprises = [
-      "Plot twist: I actually have no idea what I'm doing",
-      "Breaking: Local person discovers memes",
-      "Scientists hate this one simple trick",
-      "Error 404: Motivation not found",
-      "Upgrade required: Please insert coffee"
-    ];
-    const randomSurprise = surprises[Math.floor(Math.random() * surprises.length)];
-    setAiDescription(randomSurprise);
-    toast.success("Surprise! 🎲");
+  const surpriseMe = async () => {
+    setIsGeneratingCaption(true);
+    toast.loading("Brewing something unexpected...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-caption', {
+        body: { 
+          type: 'surprise'
+        }
+      });
+
+      if (error) throw error;
+
+      const caption = data.caption;
+      const newElement: MemeElement = {
+        id: Date.now().toString(),
+        type: 'text',
+        content: caption,
+        x: canvasRef.current!.offsetWidth / 2 - 100,
+        y: 50,
+        fontSize,
+        fontFamily,
+        color: textColor,
+        textAlign
+      };
+      const newElements = [...elements, newElement];
+      setElements(newElements);
+      setSelectedElement(newElement.id);
+      saveToHistory(newElements, backgroundImage);
+      
+      toast.dismiss();
+      toast.success("Surprise caption added!");
+    } catch (error) {
+      console.error('Error generating surprise caption:', error);
+      toast.dismiss();
+      toast.error("Failed to generate surprise caption. Please try again.");
+    } finally {
+      setIsGeneratingCaption(false);
+    }
   };
 
   const downloadMeme = () => {
@@ -318,11 +380,21 @@ const Index = () => {
                 className="mb-3"
               />
               <div className="flex gap-2">
-                <Button onClick={generateCaption} variant="outline" className="flex-1">
+                <Button 
+                  onClick={generateCaption} 
+                  variant="outline" 
+                  className="flex-1"
+                  disabled={isGeneratingCaption || !aiDescription.trim()}
+                >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Generate Caption
                 </Button>
-                <Button onClick={surpriseMe} variant="outline" className="flex-1">
+                <Button 
+                  onClick={surpriseMe} 
+                  variant="outline" 
+                  className="flex-1"
+                  disabled={isGeneratingCaption}
+                >
                   🎲 Surprise Me
                 </Button>
               </div>
