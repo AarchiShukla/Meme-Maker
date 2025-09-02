@@ -2,39 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Meme Generator Design System - Vibrant, fun, and modern
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base colors - clean and modern */
+    --background: 248 250 252;
+    --foreground: 216 28% 7%;
 
+    /* Card system - elevated surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 216 28% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 216 28% 7%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - vibrant blue for main actions */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - soft purple accent */
+    --secondary: 262 83% 96%;
+    --secondary-foreground: 262 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - subtle backgrounds */
+    --muted: 220 13% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - fun orange for highlights */
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Success - fresh green */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Warning - sunny yellow */
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Destructive - friendly red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+
+    /* Fun gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%), hsl(45 93% 47%));
+    --gradient-bg: linear-gradient(135deg, hsl(248 250 252) 0%, hsl(220 13% 96%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 1px 3px hsl(216 28% 7% / 0.1), 0 1px 2px hsl(216 28% 7% / 0.06);
+    --shadow-medium: 0 4px 6px hsl(216 28% 7% / 0.07), 0 2px 4px hsl(216 28% 7% / 0.06);
+    --shadow-large: 0 10px 15px hsl(216 28% 7% / 0.1), 0 4px 6px hsl(216 28% 7% / 0.05);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
@@ -56,33 +87,49 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark mode - keeping it subtle and elegant */
+    --background: 216 28% 7%;
+    --foreground: 220 13% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 13% 9%;
+    --card-foreground: 220 13% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 13% 9%;
+    --popover-foreground: 220 13% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 55%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 262 47% 11%;
+    --secondary-foreground: 262 83% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 13% 14%;
+    --muted-foreground: 215 16% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 216 28% 7%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 14%;
+    --input: 220 13% 14%;
+    --ring: 217 91% 60%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%), hsl(45 93% 47%));
+    --gradient-bg: linear-gradient(135deg, hsl(216 28% 7%) 0%, hsl(220 13% 9%) 100%);
+
+    --shadow-soft: 0 1px 3px hsl(0 0% 0% / 0.3), 0 1px 2px hsl(0 0% 0% / 0.2);
+    --shadow-medium: 0 4px 6px hsl(0 0% 0% / 0.3), 0 2px 4px hsl(0 0% 0% / 0.2);
+    --shadow-large: 0 10px 15px hsl(0 0% 0% / 0.4), 0 4px 6px hsl(0 0% 0% / 0.2);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +147,46 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-background to-muted text-foreground font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+  }
+
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:shadow-large hover:-translate-y-0.5;
+  }
+
+  .bounce-on-hover {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+}
+
+@layer components {
+  .meme-canvas {
+    @apply relative bg-white rounded-xl shadow-large border-2 border-dashed border-muted-foreground/30 min-h-[400px] overflow-hidden;
+  }
+  
+  .meme-canvas.has-image {
+    @apply border-solid border-primary/20;
+  }
+  
+  .control-panel {
+    @apply bg-card rounded-xl shadow-medium border p-4 space-y-4;
+  }
+  
+  .tool-button {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200;
+    @apply bg-secondary/50 text-secondary-foreground hover:bg-secondary hover:scale-105;
+  }
+  
+  .tool-button.active {
+    @apply bg-primary text-primary-foreground shadow-medium;
   }
 }
