@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,9 @@ const Index = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [aiDescription, setAiDescription] = useState("");
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [editingElement, setEditingElement] = useState<string | null>(null);
   
   // Text controls
   const [fontSize, setFontSize] = useState(32);
@@ -90,13 +93,71 @@ const Index = () => {
       return;
     }
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (rect) {
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+    // Only deselect if clicking on empty canvas area
+    if (event.target === event.currentTarget) {
       setSelectedElement(null);
+      setEditingElement(null);
     }
   };
+
+  const handleMouseDown = (event: React.MouseEvent, elementId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    setSelectedElement(elementId);
+    setIsDragging(true);
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const element = elements.find(el => el.id === elementId);
+    
+    if (rect && element) {
+      const offsetX = event.clientX - rect.left - element.x;
+      const offsetY = event.clientY - rect.top - element.y;
+      setDragOffset({ x: offsetX, y: offsetY });
+    }
+  };
+
+  const updateElement = useCallback((id: string, updates: Partial<MemeElement>) => {
+    const newElements = elements.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    );
+    setElements(newElements);
+    if (!isDragging) {
+      saveToHistory(newElements, backgroundImage);
+    }
+  }, [elements, backgroundImage, isDragging, saveToHistory]);
+
+  const handleMouseMove = useCallback((event: MouseEvent) => {
+    if (!isDragging || !selectedElement || !canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const newX = event.clientX - rect.left - dragOffset.x;
+    const newY = event.clientY - rect.top - dragOffset.y;
+    
+    // Keep element within canvas bounds
+    const constrainedX = Math.max(0, Math.min(newX, rect.width - 50));
+    const constrainedY = Math.max(0, Math.min(newY, rect.height - 30));
+    
+    updateElement(selectedElement, { x: constrainedX, y: constrainedY });
+  }, [isDragging, selectedElement, dragOffset, updateElement]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Global mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const addText = () => {
     const newElement: MemeElement = {
@@ -133,20 +194,24 @@ const Index = () => {
     toast.success("Emoji added! 😄");
   };
 
-  const updateElement = (id: string, updates: Partial<MemeElement>) => {
-    const newElements = elements.map(el => 
-      el.id === id ? { ...el, ...updates } : el
-    );
-    setElements(newElements);
-    saveToHistory(newElements, backgroundImage);
-  };
-
   const deleteElement = (id: string) => {
     const newElements = elements.filter(el => el.id !== id);
     setElements(newElements);
     setSelectedElement(null);
+    setEditingElement(null);
     saveToHistory(newElements, backgroundImage);
     toast.success("Element deleted!");
+  };
+
+  const handleTextEdit = (elementId: string, newContent: string) => {
+    updateElement(elementId, { content: newContent });
+    setEditingElement(null);
+  };
+
+  const handleDoubleClick = (elementId: string, elementType: string) => {
+    if (elementType === 'text') {
+      setEditingElement(elementId);
+    }
   };
 
   const undo = () => {
@@ -323,9 +388,9 @@ const Index = () => {
                   {elements.map((element) => (
                     <div
                       key={element.id}
-                      className={`absolute cursor-move select-none ${
-                        selectedElement === element.id ? 'ring-2 ring-primary' : ''
-                      }`}
+                      className={`absolute select-none ${
+                        selectedElement === element.id ? 'ring-2 ring-primary ring-offset-2' : ''
+                      } ${isDragging && selectedElement === element.id ? 'cursor-grabbing' : 'cursor-grab'}`}
                       style={{
                         left: element.x,
                         top: element.y,
@@ -335,21 +400,55 @@ const Index = () => {
                         color: element.color,
                         textAlign: element.textAlign,
                         textShadow: element.type === 'text' ? '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000' : undefined,
-                        transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined
+                        transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+                        zIndex: selectedElement === element.id ? 10 : 1,
+                        userSelect: 'none'
                       }}
+                      onMouseDown={(e) => handleMouseDown(e, element.id)}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedElement(element.id);
                       }}
+                      onDoubleClick={() => handleDoubleClick(element.id, element.type)}
                     >
-                      {element.content}
-                      {selectedElement === element.id && (
+                      {editingElement === element.id ? (
+                        <input
+                          type="text"
+                          defaultValue={element.content}
+                          className="bg-transparent border-none outline-none text-inherit font-inherit"
+                          style={{ 
+                            fontSize: 'inherit',
+                            fontFamily: 'inherit',
+                            color: 'inherit',
+                            textAlign: 'inherit',
+                            textShadow: 'inherit',
+                            width: 'auto',
+                            minWidth: '100px'
+                          }}
+                          autoFocus
+                          onBlur={(e) => handleTextEdit(element.id, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleTextEdit(element.id, e.currentTarget.value);
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingElement(null);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        element.content
+                      )}
+                      
+                      {selectedElement === element.id && !editingElement && (
                         <button
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform z-20"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteElement(element.id);
                           }}
+                          onMouseDown={(e) => e.stopPropagation()}
                         >
                           ×
                         </button>
