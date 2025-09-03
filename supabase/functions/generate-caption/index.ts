@@ -50,7 +50,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      
+      let errorMessage = `OpenAI API error: ${response.status}`;
+      if (response.status === 429) {
+        errorMessage = 'OpenAI API rate limit exceeded. Please check your API key quota or try again later.';
+      } else if (response.status === 401) {
+        errorMessage = 'Invalid OpenAI API key. Please check your API key configuration.';
+      } else if (response.status === 403) {
+        errorMessage = 'OpenAI API access forbidden. Please check your API key permissions.';
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
