@@ -55,6 +55,8 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [editingElement, setEditingElement] = useState<string | null>(null);
+  const [imageScale, setImageScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   
   // Text controls
   const [fontSize, setFontSize] = useState(32);
@@ -80,6 +82,8 @@ const Index = () => {
       reader.onload = (e) => {
         const imageUrl = e.target?.result as string;
         setBackgroundImage(imageUrl);
+        setImageScale(1);
+        setImagePosition({ x: 0, y: 0 });
         saveToHistory(elements, imageUrl);
         toast.success("Image uploaded successfully! 🎉");
       };
@@ -339,6 +343,14 @@ const Index = () => {
     toast.success("Instagram sharing coming soon! 📸");
   };
 
+  const selectedElementData = selectedElement ? elements.find(el => el.id === selectedElement) : null;
+
+  const updateSelectedElement = (updates: Partial<MemeElement>) => {
+    if (selectedElement) {
+      updateElement(selectedElement, updates);
+    }
+  };
+
   const commonEmojis = ["😂", "😭", "💀", "🔥", "💯", "😍", "🤔", "😱", "🙄", "😎", "🤯", "😴", "🤡", "👑", "💰", "🎉"];
 
   return (
@@ -371,8 +383,9 @@ const Index = () => {
                   onClick={handleCanvasClick}
                   style={{
                     backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
+                    backgroundSize: imageScale === 1 ? 'cover' : `${imageScale * 100}%`,
+                    backgroundPosition: `${imagePosition.x}px ${imagePosition.y}px`,
+                    backgroundRepeat: 'no-repeat',
                     aspectRatio: '16/9'
                   }}
                 >
@@ -498,153 +511,307 @@ const Index = () => {
                 </Button>
               </div>
             </Card>
+
+            {/* Image Controls */}
+            {backgroundImage && (
+              <Card className="control-panel animate-slide-up">
+                <Label className="text-base font-semibold mb-3 block">
+                  🖼️ Image Controls
+                </Label>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm">Scale</Label>
+                    <Slider
+                      value={[imageScale]}
+                      onValueChange={(value) => setImageScale(value[0])}
+                      min={0.5}
+                      max={3}
+                      step={0.1}
+                      className="mt-1"
+                    />
+                    <span className="text-xs text-muted-foreground">{Math.round(imageScale * 100)}%</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-sm">Position X</Label>
+                      <Slider
+                        value={[imagePosition.x]}
+                        onValueChange={(value) => setImagePosition(prev => ({...prev, x: value[0]}))}
+                        min={-200}
+                        max={200}
+                        step={5}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Position Y</Label>
+                      <Slider
+                        value={[imagePosition.y]}
+                        onValueChange={(value) => setImagePosition(prev => ({...prev, y: value[0]}))}
+                        min={-200}
+                        max={200}
+                        step={5}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setImageScale(1);
+                      setImagePosition({ x: 0, y: 0 });
+                    }}
+                    className="w-full"
+                  >
+                    Reset Image
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
 
-          {/* Controls Panel */}
+          {/* Sidebar Controls */}
           <div className="space-y-6">
-            {/* Action Buttons */}
-            <Card className="control-panel animate-fade-in">
+            {/* Element Controls */}
+            {selectedElementData && (
+              <Card className="control-panel">
+                <Label className="text-base font-semibold mb-3 block">
+                  {selectedElementData.type === 'text' ? '✏️' : '😀'} Edit {selectedElementData.type === 'text' ? 'Text' : 'Emoji'}
+                </Label>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm">Size</Label>
+                    <Slider
+                      value={[selectedElementData.fontSize || 32]}
+                      onValueChange={(value) => updateSelectedElement({ fontSize: value[0] })}
+                      min={12}
+                      max={selectedElementData.type === 'emoji' ? 200 : 120}
+                      step={2}
+                      className="mt-1"
+                    />
+                    <span className="text-xs text-muted-foreground">{selectedElementData.fontSize || 32}px</span>
+                  </div>
+
+                  {selectedElementData.type === 'text' && (
+                    <>
+                      <div>
+                        <Label className="text-sm">Font Family</Label>
+                        <Select
+                          value={selectedElementData.fontFamily || 'impact'}
+                          onValueChange={(value) => updateSelectedElement({ fontFamily: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="impact">Impact</SelectItem>
+                            <SelectItem value="comic">Comic Sans</SelectItem>
+                            <SelectItem value="arial">Arial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Color</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={selectedElementData.color || '#ffffff'}
+                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                            className="w-12 h-8 p-1"
+                          />
+                          <Input
+                            type="text"
+                            value={selectedElementData.color || '#ffffff'}
+                            onChange={(e) => updateSelectedElement({ color: e.target.value })}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Alignment</Label>
+                        <div className="flex gap-1 mt-1">
+                          <Button
+                            size="sm"
+                            variant={selectedElementData.textAlign === 'left' ? 'default' : 'outline'}
+                            onClick={() => updateSelectedElement({ textAlign: 'left' })}
+                          >
+                            <AlignLeft className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={selectedElementData.textAlign === 'center' ? 'default' : 'outline'}
+                            onClick={() => updateSelectedElement({ textAlign: 'center' })}
+                          >
+                            <AlignCenter className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={selectedElementData.textAlign === 'right' ? 'default' : 'outline'}
+                            onClick={() => updateSelectedElement({ textAlign: 'right' })}
+                          >
+                            <AlignRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => selectedElement && deleteElement(selectedElement)}
+                    className="w-full"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete {selectedElementData.type === 'text' ? 'Text' : 'Emoji'}
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* Add Elements */}
+            <Card className="control-panel">
               <Label className="text-base font-semibold mb-3 block">
-                🛠️ Quick Actions
+                ➕ Add Elements
               </Label>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <Button onClick={addText} variant="outline" size="sm">
+              <div className="space-y-3">
+                <Button onClick={addText} variant="outline" className="w-full">
                   <Type className="w-4 h-4 mr-2" />
                   Add Text
                 </Button>
-                <Button onClick={undo} variant="outline" size="sm" disabled={historyIndex === 0}>
-                  <Undo className="w-4 h-4 mr-2" />
-                  Undo
-                </Button>
-                <Button onClick={redo} variant="outline" size="sm" disabled={historyIndex === history.length - 1}>
-                  <Redo className="w-4 h-4 mr-2" />
-                  Redo
-                </Button>
-                <Button 
-                  onClick={() => selectedElement && deleteElement(selectedElement)} 
-                  variant="outline" 
-                  size="sm"
-                  disabled={!selectedElement}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </Card>
 
-            {/* Text Controls */}
-            <Card className="control-panel animate-fade-in">
-              <Label className="text-base font-semibold mb-3 block">
-                📝 Text Settings
-              </Label>
-              <div className="space-y-4">
                 <div>
-                  <Label className="text-sm mb-2 block">Font Family</Label>
-                  <Select value={fontFamily} onValueChange={setFontFamily}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="impact">Impact (Classic Meme)</SelectItem>
-                      <SelectItem value="arial">Arial</SelectItem>
-                      <SelectItem value="comic">Comic Sans</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label className="text-sm mb-2 block">Font Size: {fontSize}px</Label>
+                  <Label className="text-sm">Default Text Size</Label>
                   <Slider
                     value={[fontSize]}
                     onValueChange={(value) => setFontSize(value[0])}
-                    max={80}
                     min={12}
+                    max={120}
                     step={2}
+                    className="mt-1"
                   />
+                  <span className="text-xs text-muted-foreground">{fontSize}px</span>
                 </div>
-                
+
                 <div>
-                  <Label className="text-sm mb-2 block">Text Color</Label>
-                  <div className="flex gap-2">
+                  <Label className="text-sm">Default Font</Label>
+                  <Select value={fontFamily} onValueChange={setFontFamily}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="impact">Impact</SelectItem>
+                      <SelectItem value="comic">Comic Sans</SelectItem>
+                      <SelectItem value="arial">Arial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm">Default Color</Label>
+                  <div className="flex gap-2 mt-1">
                     <Input
                       type="color"
                       value={textColor}
                       onChange={(e) => setTextColor(e.target.value)}
-                      className="w-12 h-10 p-1 border rounded"
+                      className="w-12 h-8 p-1"
                     />
-                    <div className="flex gap-1">
-                      {['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00'].map(color => (
-                        <button
-                          key={color}
-                          className="w-8 h-8 rounded border-2 border-border hover:scale-110 transition-transform"
-                          style={{ backgroundColor: color }}
-                          onClick={() => setTextColor(color)}
-                        />
-                      ))}
-                    </div>
+                    <Input
+                      type="text"
+                      value={textColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="flex-1"
+                    />
                   </div>
                 </div>
-                
+
                 <div>
-                  <Label className="text-sm mb-2 block">Text Alignment</Label>
-                  <div className="flex gap-1">
-                    {[
-                      { value: 'left', icon: AlignLeft },
-                      { value: 'center', icon: AlignCenter },
-                      { value: 'right', icon: AlignRight }
-                    ].map(({ value, icon: Icon }) => (
-                      <Button
-                        key={value}
-                        variant={textAlign === value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setTextAlign(value as typeof textAlign)}
-                        className="flex-1"
-                      >
-                        <Icon className="w-4 h-4" />
-                      </Button>
-                    ))}
+                  <Label className="text-sm">Default Alignment</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Button
+                      size="sm"
+                      variant={textAlign === 'left' ? 'default' : 'outline'}
+                      onClick={() => setTextAlign('left')}
+                    >
+                      <AlignLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={textAlign === 'center' ? 'default' : 'outline'}
+                      onClick={() => setTextAlign('center')}
+                    >
+                      <AlignCenter className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={textAlign === 'right' ? 'default' : 'outline'}
+                      onClick={() => setTextAlign('right')}
+                    >
+                      <AlignRight className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
             </Card>
 
-            {/* Emoji Picker */}
-            <Card className="control-panel animate-fade-in">
+            {/* Emoji Controls */}
+            <Card className="control-panel">
               <Label className="text-base font-semibold mb-3 block">
-                😄 Emoji Stickers
+                😀 Emojis
               </Label>
-              <div className="grid grid-cols-8 gap-2">
+              <div className="flex flex-wrap gap-1">
                 {commonEmojis.map((emoji) => (
-                  <button
+                  <Button
                     key={emoji}
-                    className="text-2xl p-2 rounded hover:bg-muted bounce-on-hover"
+                    variant="outline"
+                    size="sm"
                     onClick={() => addEmoji(emoji)}
+                    className="text-lg hover:scale-110 transition-transform"
                   >
                     {emoji}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </Card>
 
-            {/* Generate & Share */}
-            <Card className="control-panel animate-fade-in">
+            {/* Action Buttons */}
+            <Card className="control-panel">
               <Label className="text-base font-semibold mb-3 block">
-                🚀 Export & Share
+                🎬 Actions
               </Label>
               <div className="space-y-2">
-                <Button 
-                  onClick={downloadMeme} 
-                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
-                  size="lg"
-                >
+                <div className="flex gap-2">
+                  <Button
+                    onClick={undo}
+                    variant="outline"
+                    size="sm"
+                    disabled={historyIndex <= 0}
+                    className="flex-1"
+                  >
+                    <Undo className="w-4 h-4 mr-1" />
+                    Undo
+                  </Button>
+                  <Button
+                    onClick={redo}
+                    variant="outline"
+                    size="sm"
+                    disabled={historyIndex >= history.length - 1}
+                    className="flex-1"
+                  >
+                    <Redo className="w-4 h-4 mr-1" />
+                    Redo
+                  </Button>
+                </div>
+                <Button onClick={downloadMeme} variant="outline" className="w-full">
                   <Download className="w-4 h-4 mr-2" />
-                  Download Meme
+                  Download
                 </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={shareToWhatsApp} variant="outline" size="sm">
+                <div className="flex gap-2">
+                  <Button onClick={shareToWhatsApp} variant="outline" size="sm" className="flex-1">
                     💬 WhatsApp
                   </Button>
-                  <Button onClick={shareToInstagram} variant="outline" size="sm">
+                  <Button onClick={shareToInstagram} variant="outline" size="sm" className="flex-1">
                     📸 Instagram
                   </Button>
                 </div>
